@@ -291,3 +291,5 @@ Trade-offs: as Ingonyama et al. note, fewer proofs per batch reduce latency but 
 
 Key techniques and figures are drawn from the literature. Notably, Campanelli *et al.* describe efficient ZK accumulators【1†L62-L71】【2†L77-L81】. Mina Protocol’s recursive zkRollups show how proofs can be merged for constant verify cost【4†L119-L124】【4†L126-L134】. Ingonyama’s survey of ZK bridges emphasizes trade-offs in batching versus cost【6†L199-L201】. Atomic swap foundations are given by Herlihy【8†L71-L79】 and Chainlink’s HTLC overview【9†L163-L172】【9†L173-L179】. Anchoring to Bitcoin for security is advocated in industry sources【13†L29-L36】【14†L105-L112】. These inform BCYX’s design. 
 
+Read the full paper (submitted to SBC 2026):  
+[“Privacy-Preserving Batch Oracles: Hierarchical Proofs via Accumulate and zkSTARK”](https://github.com/bcyx-protocol/docs/blob/main/2026-03-12-privacy-preserving-batch-oracles-annabelleshalom-christyanaviva-paulsnow.pdf) by Annabelle Shalom, ChristyAna Viva, Paul Snow.
