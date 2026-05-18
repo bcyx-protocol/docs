@@ -28,7 +28,7 @@ The protocol is designed as a generalized coordination layer for:
 
 ```txt
 docs/
-├── deep-bcyx.md
+├── tech-summary.md
 ├── architecture.md
 ├── swapping-mechanism.md
 ├── accumulators.md
@@ -44,7 +44,7 @@ docs/
 
 # Documents
 
-## `deep-bcyx.md`
+## `tech-summary.md`
 High-level protocol overview and conceptual thesis behind BCYX.
 
 Includes:
