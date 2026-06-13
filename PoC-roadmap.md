@@ -1,4 +1,4 @@
-Below is a practical roadmap for the **BCYX-SWAP proof-of-concept**, assuming the documentation repo is now the source of truth and the first implementation goal is a **private BTC ↔ strkBTC swap coordination flow**.
+Below is a practical roadmap for the **BCYX-SWAP proof-of-concept**, assuming the documentation repo is now the source of truth and the first implementation goal is a **private BTC ↔ correspondent-chain asset swap coordination flow**.
 
 The implementation should stay aligned with the paper’s core properties: **batch efficiency**, **trust minimization**, **authority provenance**, and **selective disclosure**. The paper’s architecture also makes the key design choice clear: prove existence with anchored receipts, then prove predicates over committed data with zero knowledge.  
 
@@ -10,11 +10,11 @@ The implementation should stay aligned with the paper’s core properties: **bat
 
 **Decisions to freeze**
 
-* Asset pair: BTC ↔ strkBTC
+* Asset pair: BTC ↔ correspondent-chain asset
 * Settlement model: ephemeral coordination, no long-lived BCYX custody
 * Finality model: correspondent-chain finalization
 * Privacy model: commitments + selective disclosure
-* Verification model: Cairo verifier on Starknet
+* Verification model: proof verifier on the selected correspondent chain
 * Proof model: recursive zk-STARK / batch aggregation later, single swap first
 
 **Deliverables**
@@ -44,7 +44,7 @@ The implementation should stay aligned with the paper’s core properties: **bat
 * `LockedOnBTC`
 * `ProofPending`
 * `ProofVerified`
-* `ReleasedOnStarknet`
+* `ReleasedOnCorrespondentChain`
 * `Finalized`
 * `Refundable`
 * `Refunded`
@@ -98,7 +98,7 @@ The implementation should stay aligned with the paper’s core properties: **bat
 
 **Deliverables**
 
-* Rust/TypeScript/Cairo-compatible schema draft
+* Rust/TypeScript schema draft with correspondent-chain bindings
 * serialization format
 * canonical hashing rules
 
@@ -194,7 +194,7 @@ This is the base privacy layer. The paper’s model is exactly this pattern: sto
 
 **Deliverables**
 
-* proof circuit / Cairo program draft
+* proof circuit / verifier program draft
 * proving script
 * verifier input format
 * test vectors
@@ -240,9 +240,9 @@ This is where BCYX starts to resemble the paper’s batch-efficiency model: hier
 
 ---
 
-### Phase 8 — Implement Starknet verification
+### Phase 8 — Implement correspondent-chain verification
 
-**Goal:** make Starknet the public verification boundary.
+**Goal:** make the selected correspondent chain the public verification boundary.
 
 **Contract responsibilities**
 
@@ -260,21 +260,21 @@ This is where BCYX starts to resemble the paper’s batch-efficiency model: hier
 
 **Deliverables**
 
-* Cairo contract skeletons
+* verifier contract or module skeletons
 * verifier integration
 * event schema
 * testnet deployment plan
 
 **Exit criteria**
 
-* Starknet can validate a proof and record the outcome
+* the selected correspondent chain can validate a proof and record the outcome
 * the contract state matches the off-chain accumulator state
 
 ---
 
 ### Phase 9 — Connect correspondent chains
 
-**Goal:** ensure the swap actually settles on BTC and strkBTC side domains.
+**Goal:** ensure the swap actually settles on BTC and correspondent-chain side domains.
 
 **BTC side**
 
@@ -282,7 +282,7 @@ This is where BCYX starts to resemble the paper’s batch-efficiency model: hier
 * prove lock inclusion
 * support refund/timeout path
 
-**strkBTC side**
+**Correspondent-chain side**
 
 * mint or release after proof verification
 * support burn/release on exit
@@ -291,7 +291,7 @@ This is where BCYX starts to resemble the paper’s batch-efficiency model: hier
 **Deliverables**
 
 * BTC-side lock adapter
-* strkBTC-side settlement adapter
+* correspondent-chain settlement adapter
 * correspondent-chain receipt format
 * rollback/refund scripts
 
@@ -401,8 +401,8 @@ If you want the shortest path to something demoable, build in this order:
 2. commitment + nullifier layer
 3. private matching pool
 4. single-swap proof
-5. Starknet verifier
-6. BTC/strkBTC settlement adapters
+5. correspondent-chain verifier
+6. BTC/correspondent-chain settlement adapters
 7. batch proofs and accumulators
 8. selective disclosure rules
 9. refund/rollback
@@ -415,9 +415,9 @@ That order gets you to a working PoC fastest while keeping the architecture alig
 A realistic first milestone is a demo where:
 
 * one BTC swap intent is committed,
-* one strkBTC counterpart is matched,
+* one correspondent-chain asset counterpart is matched,
 * one proof is generated,
-* Starknet verifies it,
+* the correspondent chain verifies it,
 * and both sides settle or refund safely.
 
 That is enough to prove the BCYX-SWAP concept before expanding into batching, selective disclosure variants, or broader correspondent-chain support.

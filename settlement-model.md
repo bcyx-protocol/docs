@@ -27,7 +27,7 @@ A BCYX settlement is successful only when the relevant correspondent chains have
 BCYX does **not** replace settlement on the chains themselves. It only coordinates the path to settlement.
 
 That means:
-- BCYX can help a BTC ↔ strkBTC swap happen privately,
+- BCYX can help a BTC ↔ correspondent-chain asset swap happen privately,
 - but the final asset state must still be recognized by the correspondent chains,
 - and the swap should be recoverable if one side fails.
 
@@ -62,7 +62,7 @@ BCYX follows this rule:
 ```text
 If the correspondent chains have not settled,
 BCYX has not settled.
-````
+```
 
 So the protocol does not claim finality on its own. It only coordinates and proves that the corresponding chain states are consistent with the intended swap.
 
@@ -87,7 +87,7 @@ G --> H[Accumulator / Batch Proof]
 
 H --> I[Correspondent Chain Verification]
 I --> J[BTC Side Finality]
-I --> K[strkBTC Side Finality]
+I --> K[Correspondent-Chain Side Finality]
 
 J --> L[Settlement Complete]
 K --> L
@@ -135,12 +135,14 @@ Checks that the proof and chain state match the expected settlement outcome.
 
 A **correspondent chain** is a chain that participates directly in settlement finality.
 
-For BCYX-SWAP, the correspondent chains could be:
+For BCYX-SWAP, a correspondent chain is any settlement domain that can interact with Bitcoin network state directly or through a verifiable adapter. Examples include:
 
 * Bitcoin for BTC locking or release,
-* Starknet for strkBTC minting, redemption, or verification,
-* another UTXO chain,
-* or a settlement chain that mirrors the final state.
+* Bitcoin sidechains or Layer 2 systems that can represent BTC-backed value,
+* smart-contract chains with BTC light-client, oracle, bridge, or threshold-signer adapters,
+* UTXO-compatible chains that can coordinate with Bitcoin scripts or proofs,
+* federated or covenant-style BTC settlement environments,
+* or any settlement chain that mirrors the final state with auditable Bitcoin anchoring.
 
 The key property is that settlement is not “inside BCYX”; BCYX only ensures the correspondent chains can settle consistently.
 
@@ -184,7 +186,7 @@ If multiple swaps are pending, they are compressed into a batch proof.
 The correspondent chains execute the final state transition:
 
 * BTC remains locked, released, or re-assigned,
-* strkBTC is released or burned,
+* the correspondent-chain asset is released, minted, burned, or reassigned,
 * or a mirrored settlement record is written.
 
 ### Phase 6 — Finalization or Recovery
@@ -304,7 +306,7 @@ The paper’s architecture supports this general approach through anchored recei
 For the proof-of-concept, this model means:
 
 * BTC is the source asset,
-* strkBTC is the correspondent settlement representation,
+* a correspondent-chain asset is the settlement representation,
 * BCYX coordinates the swap privately,
 * the proof verifies the intended path,
 * the correspondent chains finalize the value transfer,
@@ -326,8 +328,8 @@ So the PoC can be implemented as:
 2. BCYX creates a commitment.
 3. Coordination pool matches or routes the intent.
 4. Proof is generated and aggregated.
-5. Starknet verifier confirms the proof.
-6. BTC-side and strkBTC-side settlement finalize.
+5. The correspondent-chain verifier confirms the proof.
+6. BTC-side and correspondent-chain settlement finalize.
 7. BCYX ephemeral state is discarded.
 
 ---
@@ -357,4 +359,3 @@ The protocol coordinates private intent, proves correctness, and then lets the c
 * private,
 * auditable,
 * and easier to reason about.
-

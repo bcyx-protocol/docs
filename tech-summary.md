@@ -115,7 +115,7 @@ We leave the exact primitive as a parameter. A Merkle-based accumulator is simpl
 ## Zero-Knowledge Proofs & Aggregation
 
 BCYX proofs need to be **succinct** and ideally support aggregation/recursion:
-- **Proof Systems:** We can use Groth16 (small proofs, ~240 bytes, ~200k gas on EVM【17†L143-L149】【18†L57-L61】) or PLONK/Halo (slightly larger proofs, ~1–3 KB, but no need for a trusted setup and supports custom elliptic curves). SNARKs with recursion (e.g. Plonky2, Halo2) allow compressing multiple proofs into one. zk-STARKs (e.g. Winterfell, Cairo) have larger proofs (tens of KB) but transparent setup and possibly cheaper verification on large scale (no pairings).
+- **Proof Systems:** We can use Groth16 (small proofs, ~240 bytes, ~200k gas on EVM【17†L143-L149】【18†L57-L61】) or PLONK/Halo (slightly larger proofs, ~1–3 KB, but no need for a trusted setup and supports custom elliptic curves). SNARKs with recursion (e.g. Plonky2, Halo2) allow compressing multiple proofs into one. zk-STARKs and zkVM-oriented proving systems have larger proofs (tens of KB) but transparent setup and possibly cheaper verification on large scale (no pairings).
 - **Aggregation:** We consider:
   - *Sequential proofs*: each swap yields one proof; verify all individually. **(Lightweight)** – simplest, but high on-chain cost (O(n) verifies).
   - *Recursive SNARK*: chain proofs so that verifying one proof verifies many swaps【4†L126-L134】. Good asymptotic; verification is constant (often one pairing) regardless of batch size, but prover time grows and setup is complex.

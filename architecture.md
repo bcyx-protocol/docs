@@ -1,7 +1,10 @@
-# BCYX Architecture and BCYX‑SWAP PoC
+# BCYX Architecture and BCYX-SWAP PoC
 
-## Executive Summary  
-BCYX is a **privacy-first cross-chain coordination and settlement** framework that separates *public verifiability* from *private execution*. It uses a commitment-based layer underpinned by Merkle/Accumulator trees (inspired by Accumulate) anchored to Bitcoin, together with recursive zk‑STARK proofs to validate complex swaps without revealing sensitive data. A shielded coordination pool abstracts transaction intents, while a Cairo-based ZK engine verifies batch proofs on Starknet. The BCYX‑SWAP prototype will demonstrate an atomic swap between Chia (XCH) and a Starknet asset, using on‑chain commitments, STARK proofs, and Verifiable Delay Functions (VDFs) to ensure atomicity, accountability, and selective disclosure of compliance fields.
+## Executive Summary
+
+BCYX is a **privacy-first cross-chain coordination and settlement** framework that separates *public verifiability* from *private execution*. It uses commitment trees, accumulator roots, Bitcoin anchoring, and recursive zk-STARK proofs to validate swaps without revealing sensitive data.
+
+The BCYX-SWAP prototype demonstrates private settlement coordination between BTC on the Bitcoin network and a correspondent-chain asset on a chain that can interact with Bitcoin state. The correspondent chain may be a Bitcoin sidechain, Bitcoin Layer 2, UTXO-compatible chain, smart-contract chain with BTC verification adapters, federated BTC environment, or another settlement domain with auditable Bitcoin anchoring.
 
 ## Architecture
 
@@ -11,153 +14,122 @@ flowchart LR
     U --> C[Commitment Layer]
     C --> P[Shielded Coordination Pools]
     P --> E[Swap Coordination Engine]
-    E --> Z[Zero-Knowledge Proof Engine - Cairo]
+    E --> Z[Zero-Knowledge Proof Engine]
     Z --> A[Accumulator / Batch Proof Aggregation]
-    A --> V[Settlement Verification]
-    V --> X[Cross-Chain Execution - Bitcoin / Chia]
+    A --> V[Correspondent-Chain Verification]
+    V --> X[Bitcoin + Correspondent-Chain Execution]
 ```
 
-BCYX’s **commitment layer** encodes swap intents and asset deposits as cryptographic commitments (e.g. Merkle roots, hashes or Accumulate receipts) anchored to Bitcoin/Chia for security. Commitments are posted on-chain without revealing details.  These feed into **shielded coordination pools**, which batch and privately match swap orders. A **Swap Coordination Engine** tracks matched swaps off-chain and orchestrates proof generation. 
+BCYX’s **commitment layer** encodes swap intents and asset deposits as cryptographic commitments. Commitments can be anchored to Bitcoin for durable timestamping and auditability, while the correspondent chain stores the verification state needed to finalize a swap.
 
-The **Zero-Knowledge Proof Layer** (implemented in Cairo) generates STARK proofs attesting that swap conditions are met (e.g. both sides locked funds) without revealing identities or amounts. Proofs from many swaps are aggregated using accumulators or Merkle trees into a single batch proof. Batch proofs leverage hierarchical/recursive composition: verifying a root proof is polylogarithmic in the total work, enabling scalable throughput. 
+The **Zero-Knowledge Proof Layer** generates proofs that settlement conditions are satisfied without revealing identities, amounts, routes, or private matching logic. Proofs from many swaps are aggregated using accumulators or Merkle trees into a compact batch proof.
 
-Finally, a **Settlement Verification** step on Starknet contracts checks the batched proof and corresponding commitments. Upon success, **cross-chain execution** finalizes the swap: releasing assets on each chain atomically. Failures or disputes trigger a rollback logic (e.g. VDF timers or timeout refunds). The architecture assumes blockchain finality and sound cryptography; adversarial actions (e.g. double-spending commitments) are prevented by nullifiers and proof integrity.
+Finally, a **Correspondent-Chain Verification** step checks the batch proof and the associated roots. Upon success, execution finalizes on the Bitcoin side and on the correspondent-chain side. Failures or disputes trigger timeout and refund paths.
 
 ### Component Responsibilities
 
-| Component                   | Responsibility                                                                                                                                   |
-|-----------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Commitment Layer**        | Encodes deposit/swap intents as Merkle/Accumulate commitments or hashes; anchors them to Bitcoin/Chia (using Taproot or Accumulate anchoring). |
-| **Shielded Pools**          | Holds batched commitments, hides transaction graph; performs private order-matching and aggregation of swap intents.                              |
-| **Swap Coordination Engine**| Tracks paired orders, collects proofs; triggers prover to compute zk-STARKs; manages state (including nullifiers for spent commitments).         |
-| **ZK Proof Engine**         | Generates zk-STARK proofs (via Cairo/Cairo-1) attesting correctness of swap logic and commitment consistency without revealing secrets.       |
-| **Accumulator**             | Aggregates multiple swap proofs/commitments into a Merkle/accumulator root; updates incrementally to support batch verification.         |
-| **Verifier Contracts**      | Starknet Cairo contracts that verify STARK proofs and check committed roots; interface with on-chain records on Bitcoin/Chia for finality.          |
-| **Cross-Chain Executors**   | On-chain scripts (e.g. Bitcoin Taproot or Chia CAT scripts) that lock/release funds; enforce atomic swap logic and time-lock/VDF conditions.     |
+| Component | Responsibility |
+| --- | --- |
+| **Commitment Layer** | Encodes deposit and swap intents as commitments; supports Bitcoin anchoring and correspondent-chain receipts. |
+| **Shielded Pools** | Holds batched commitments, hides transaction graphs, and performs private matching. |
+| **Swap Coordination Engine** | Tracks paired commitments, manages state transitions, and triggers proof generation. |
+| **ZK Proof Engine** | Generates proofs of swap correctness, commitment inclusion, nullifier uniqueness, and policy satisfaction. |
+| **Accumulator** | Aggregates commitments, nullifiers, and proofs into compact roots for batch verification. |
+| **Verifier Modules** | Verify proofs and roots on a correspondent chain that can interact with Bitcoin network state. |
+| **Cross-Chain Executors** | Lock, release, burn, mint, or refund assets according to verified settlement conditions. |
 
 ## Security, Threat Model & Privacy
 
--- **Security Assumptions**: Relies on the cryptographic soundness of Merkle/accumulator hashes, zk-STARK proofs, and underlying blockchains. Commitments use collision-resistant hashes; STARKs assume collision/poly-log soundness. 
-- **Threat Model**: Adversary may attempt double-spend, front-run or extract private data. BCYX mitigates this by requiring valid STARK proofs before settlements and by using *nullifiers* to mark commitments as spent (preventing reuse). Malicious coordinators cannot forge state without breaking STARK integrity. 
-- **Privacy & Disclosure Model**: By default, transaction details (amounts, participants) are hidden. Only high-level commitments and proofs are public. Selective-disclosure allows revealing compliance attributes (e.g. whitelisted identities) without exposing full trace. For example, a regulator can verify a KYC flag on a commitment but not see raw amounts. BCYX is “privacy-by-design” with opt-in disclosure when authorities provide proofs or keys.
+- **Security Assumptions:** BCYX relies on sound proof systems, collision-resistant commitments, correct accumulator updates, and the finality assumptions of Bitcoin plus the selected correspondent chain.
+- **Threat Model:** Adversaries may try to double-spend commitments, front-run settlement, forge proofs, or infer private routing. BCYX mitigates this with nullifiers, hidden coordination pools, proof verification, and minimal public inputs.
+- **Privacy & Disclosure Model:** Amounts, participants, and routes are hidden by default. Selective disclosure allows specific compliance or policy facts to be proven without exposing the full transaction graph.
 
 ## BCYX-SWAP PoC Design
 
-### Data Structures  
-- **Commitments**: Merkle-tree nodes or Accumulate account hashes representing locked UTXOs. (Each account is a growing Merkle tree.)  
-- **Nullifiers**: Unique nullifiers derived from commitments (e.g. Pedersen hash of preimage) to prevent double-spend, similar to Zcash’s nullifiers.  
-- **Swap Objects**: Off-chain records pairing two commitments (one from each side) along with swap metadata (IDs, timeout).  
+### Data Structures
+
+- **Commitments:** Hashes or Merkle-tree leaves representing private swap intents, BTC locks, or correspondent-chain settlement claims.
+- **Nullifiers:** One-time markers derived from commitments to prevent replay or double execution.
+- **Swap Objects:** Ephemeral records pairing a BTC-side commitment with a correspondent-chain commitment, including timeout and proof metadata.
+- **Receipts:** Chain-native or adapter-produced records proving that a relevant settlement event exists.
 
 ### API Endpoints
 
-| Endpoint               | Inputs                              | Outputs                     | Description                                 |
-|------------------------|-------------------------------------|-----------------------------|---------------------------------------------|
-| `POST /commit`         | `{user, asset, amount, pubkey}`     | `commitmentID`              | Create a new commitment; locks funds off-chain/AC with signature. |
-| `POST /match`          | `{commitmentID_A, commitmentID_B}`  | `swapID`                    | Pair two commitments to form a candidate swap. |
-| `POST /prove`          | `{swapID}`                          | `proofData`                 | Triggers zk-STARK prover to generate proof for swap. |
-| `POST /verify`        | `{proofData}`                       | `success/failure`           | Calls Starknet Cairo contract to verify proof on-chain. |
-| `POST /settle`        | `{swapID}`                          | `{txId_A, txId_B}`          | Finalizes atomic release of assets on both chains. |
-| `POST /refund`         | `{swapID}`                          | `{refundTx}`                | Refunds assets if proof fails or timeout occurs. |
+| Endpoint | Inputs | Outputs | Description |
+| --- | --- | --- | --- |
+| `POST /commit` | `{user, asset, amount, pubkey}` | `commitmentID` | Create a private settlement commitment. |
+| `POST /match` | `{commitmentID_A, commitmentID_B}` | `swapID` | Pair commitments into a candidate swap. |
+| `POST /prove` | `{swapID}` | `proofData` | Generate a proof for the swap. |
+| `POST /verify` | `{proofData}` | `success/failure` | Submit proof to the correspondent-chain verifier. |
+| `POST /settle` | `{swapID}` | `{txId_A, txId_B}` | Finalize release, mint, burn, or reassignment. |
+| `POST /refund` | `{swapID}` | `{refundTx}` | Refund assets if proof or timeout conditions fail. |
 
-*(API is conceptual; actual implementation may use Starknet messages/events rather than HTTP.)*  
+The API is conceptual. Actual implementations may use events, messages, contract calls, Bitcoin transactions, or correspondent-chain adapters.
 
-### On-Chain Contracts and Anchoring  
-- **Starknet (Cairo)**: A verifier contract accepts zk-STARK proofs and commitment roots. It stores state for open swaps and nullifiers. Interfaces with off-chain proof server (via Chain Abstraction or messaging).  
-- **Bitcoin/Chia Anchors**: Commitment anchors use Taproot scripts on Bitcoin (or ADI anchors on Accumulate) to cryptographically bind state【23†L1-L4】. For Chia, CAT (Chia Asset Tokens) or Chialisp can lock funds with a puzzle that requires a valid proof of commitment matching. VDFs from Chia are used for timed release/dispute.
+### Correspondent-Chain Eligibility
 
-### Proof Flow  
-1. **Commit Phase**: Users lock funds in on-chain scripts, producing public commitment IDs. Each commit event is recorded (with optional Bitcoin/CAT anchoring) and yields a commitment root.  
-2. **Matching & Coordination**: Two commitments (one XCH, one Starknet asset) are matched, creating a `swapID`. Off-chain, the coordinator collects the secret data (UTXO preimages) under a ZKP binding.  
-3. **Proof Generation**: The Cairo prover constructs a STARK proof that “commitment A and B are locked, correspond to off-chain secret values, and satisfy swap rules”. This uses Merkle proofs of inclusion in the accumulators.  
-4. **Batch Aggregation**: Multiple swaps’ proofs can be batched: we compute a Merkle/accumulator root of all proofs and generate a single aggregate proof (leveraging recursive STARKs).  
-5. **Verification**: The Starknet contract verifies the aggregate proof and then verifies each swap state (using stored roots/nullifiers). Upon success, it emits a `SwapExecutable` event.  
+A correspondent chain is eligible for BCYX-SWAP when it can do at least one of the following:
 
-### Accumulator Updates and Nullifiers  
-- **Accumulator Algorithm**: Maintain a Merkle tree over swap commitments or proofs. Each new proof yields a leaf; tree root is updated using efficient Merkle append (or sparse Merkle). The accumulator root is included in the Starknet contract state.  
-- **Nullifier Handling**: When a commitment is spent (either via successful swap or refund), compute its nullifier and store on-chain. Any attempt to reuse the same commitment fails if nullifier is already present. This prevents double spending of locked funds.
+- verify BTC lock, release, or anchor data through a light client, oracle, relay, threshold signer, or bridge adapter,
+- store proof verification state and emit finalization receipts,
+- represent BTC-backed settlement value through a sidechain, Layer 2, wrapped asset, vault, or federation,
+- enforce timeout, refund, or dispute rules compatible with Bitcoin-side settlement,
+- or provide auditable anchors back to the Bitcoin network.
 
-### Atomic Swap Protocol  
-1. **Lock-in (t=0)**: Both parties lock XCH and Starknet token in respective on-chain scripts under BCYX-defined puzzle conditions (with timeouts and required proof conditions).  
-2. **Reveal (t=1)**: Off-chain swap coordinator reveals proof triggers. If on Starknet chain, the Cairo verifier sees the pending swap and calls prover; if on Chia, it awaits STARK proof submission.  
-3. **Verify & Execute**: Once proof is submitted, each chain’s contracts atomically release the counterparty’s funds (via pre-specified public keys).  
-4. **Timeout/Dispute**: If the proof does not arrive by a deadline, the VDF unlocks refunds after delay (e.g. after X blocks on Chia). Both parties can individually reclaim funds post-timeout. The VDF ensures irreversible wait and mitigates front-running, as in other atomic swap protocols.
+### Proof Flow
 
-### Dispute/Rollback Logic  
-- **VDF Timer**: A Chia-based VDF (or Bitcoin CLTV timelock) enforces a minimum delay before refunds. This prevents immediate counterparty theft.  
-- **Fallback**: If a discrepancy is detected (e.g. proof fails), the system can trigger a rollback: invalidates the swap, and both sides can refund once VDF expires.  
-- **Challenge Window**: Potentially implement a short window for dispute submission on Starknet, similar to optimistic rollup challenge, though zk proofs minimize this need.
+1. **Commit Phase:** Users create BTC-side and correspondent-chain commitments.
+2. **Matching & Coordination:** The shielded pool matches compatible commitments without revealing counterparties.
+3. **Proof Generation:** The prover shows that the commitments exist, the swap rules are satisfied, and nullifiers are unused.
+4. **Batch Aggregation:** Multiple swaps can be compressed into one root and one aggregate proof.
+5. **Verification:** The correspondent-chain verifier validates the proof and emits a settlement event.
+6. **Execution:** Bitcoin-side and correspondent-chain-side executors finalize or refund according to the verified outcome.
 
-### Testnet Deployment & Tooling  
-- **Testnets**: Use Starknet testnet (e.g. Goerli/Lagos) for Cairo contracts; use Chia testnet or Signet for VDF/atomic scripts.  
-- **Tooling**: Cairo compiler & tooling (Starknet docs【19†L72-L74】), Python or Rust for STARK prover (e.g. Winterfell/Cairo CLI), Chia node for VDF.  
-- **Simulation Environment**: Mock chain or local devnet running Bitcoin Core regtest with Taproot support, for initial PoC.  
-- **Automation**: CI scripts to run proofs and measure performance.
+### Accumulator Updates and Nullifiers
 
-### Benchmarks & Metrics  
-- **Proof Size**: Measure STARK proof byte-size for single swap vs batched (expect kilobytes).  
-- **Verification Cost**: Gas cost of Cairo verifier for single vs batched proof.  
-- **Latency**: Time to generate a proof for one swap; effect of batch size on prover time.  
-- **Throughput**: Swaps per second or per batch; how many concurrent swaps before performance degrades.  
-- **Security Limits**: Memory and CPU requirements for prover (to assess feasibility on modest hardware).
+- **Accumulator Algorithm:** Maintain Merkle or sparse-Merkle roots over commitments, nullifiers, proofs, and settlement receipts.
+- **Nullifier Handling:** When a commitment is spent, its nullifier is recorded. Reuse of the same private object fails.
 
-## Implementation Milestones (12‑Week Pilot)
+### Atomic Swap Protocol
 
-| Weeks    | Milestone & Outputs                                   |
-|----------|-------------------------------------------------------|
-| **W1–2** | **Design & Setup:** Finalize architecture; define data schemas and contracts; setup dev environments (Starknet, Chia). Document design with diagrams. |
-| **W3–4** | **Commitment Layer:** Implement on-chain commitment contracts (Cairo); scripting for Bitcoin/Chia anchors. Develop accumulator structure and nullifier logic. |
-| **W5–6** | **ZK Proof Engine:** Prototype Cairo program for swap logic; integrate with STARK prover (Winterfell or Cairo off-chain). Initial single-swap proof generation and local verify. |
-| **W7–8** | **Batch & Recursion:** Implement batched Merkle accumulator; support multiple swap proofs. Test recursive proof composition (multiple swaps into one proof)【20†L52-L60】. |
-| **W9–10**| **Integration & Testing:** Deploy verifier on Starknet testnet; complete end-to-end XCH↔Starknet swap flow. Conduct atomic swap tests, handle timeout logic. |
-| **W11**  | **Benchmarking & Documentation:** Measure proof sizes, costs, latencies; optimize code. Finalize developer docs and API references. |
-| **W12**  | **Demo & Handoff:** Public demonstration of confidential swap; publish code (MIT license) and technical write-up. Update repository with tutorials and benchmarks. |
+1. **Lock-in:** BTC is locked under a Taproot-compatible script, multisig condition, or PoC escrow rule. The correspondent-chain asset is also locked, reserved, or represented.
+2. **Proof Trigger:** The coordinator prepares the proof when both sides have compatible commitments and receipts.
+3. **Verify & Execute:** The correspondent-chain verifier accepts the proof, and both settlement sides execute the final state transition.
+4. **Timeout/Dispute:** If proof or execution fails, timeouts unlock refund paths.
 
-## Tables
+### Testnet Deployment & Tooling
 
-**Component Responsibilities (ref. above)**
+- **Bitcoin Environment:** Bitcoin Core regtest, Signet, or another controlled BTC-network environment for lock and refund testing.
+- **Correspondent-Chain Environment:** A selected sidechain, Layer 2, smart-contract chain, UTXO-compatible chain, or simulated settlement VM with proof verification support.
+- **Tooling:** Rust or TypeScript coordination services, STARK prover tooling, adapter SDKs, and reproducible test scripts.
 
-| Component           | Roles                                                 |
-|---------------------|-------------------------------------------------------|
-| Commitment Layer    | Users lock funds; anchor commitments to blockchain    |
-| Shielded Pools      | Match and batch swaps privately                       |
-| Swap Engine         | Manage swap state; collect inputs for proofs          |
-| ZK Prover           | Generate STARK proofs of swap correctness             |
-| Accumulator         | Aggregate proof commitments into single root         |
-| Verifier Contract   | Verify proofs; enforce swap outcomes                  |
-| Executors (BTC/XCH) | Release or refund assets based on proof outcomes     |
+### Benchmarks & Metrics
 
-**BCYX-SWAP API Endpoints (conceptual)**
+- proof size for single-swap and batched proofs,
+- verifier cost on the correspondent chain,
+- proof generation latency,
+- batch size versus settlement latency,
+- refund execution time,
+- and adapter reliability for BTC-state verification.
 
-| Endpoint      | Inputs                    | Output               | Purpose                         |
-|---------------|---------------------------|----------------------|---------------------------------|
-| `/commit`     | user, asset, amount, key  | commitmentID         | Lock assets, return commitment  |
-| `/match`      | commitmentID_A, B         | swapID               | Create swap pair                |
-| `/prove`      | swapID                    | proofBlob            | Compute zk-STARK proof          |
-| `/verify`    | proofBlob, proofRoot       | success/fail         | On-chain proof verification     |
-| `/settle`     | swapID                    | txIDs                | Trigger atomic release          |
-| `/refund`     | swapID                    | refundTx             | Refund assets on timeout        |
+## Implementation Milestones
 
-**Milestone Schedule**
-
-| Week Range | Goals & Deliverables                                      |
-|------------|------------------------------------------------------------|
-| 1–2        | Architecture docs; dev environment; basic contracts       |
-| 3–4        | Commitment & anchoring layer implemented; nullifiers     |
-| 5–6        | Cairo ZK programs; single-swap proof prototype           |
-| 7–8        | Batch/recursive proof integration; multi-swap tests       |
-| 9–10       | Starknet deployment; end-to-end atomic swap tests         |
-| 11         | Performance benchmarks; documentation draft              |
-| 12         | Final demo; public release of code and report            |
-
+| Weeks | Milestone & Outputs |
+| --- | --- |
+| **W1-2** | Finalize correspondent-chain target criteria, swap schemas, and local dev environments. |
+| **W3-4** | Implement commitments, nullifiers, BTC lock adapter, and correspondent-chain receipt format. |
+| **W5-6** | Prototype single-swap proof generation and local verification. |
+| **W7-8** | Add accumulator roots, batch proof aggregation, and replay tests. |
+| **W9-10** | Integrate Bitcoin-side and correspondent-chain-side settlement adapters end to end. |
+| **W11** | Benchmark proof size, verification cost, latency, and refund behavior. |
+| **W12** | Publish demo, documentation, test vectors, and final technical report. |
 
 ## Appendix: References
 
-- Accumulate Network — *How Accumulate Enables Modular Blockchains* (Merklization, anchoring)  
-- ShiftMag — *Cairo and Starknet: Why they exist* (Cairo as provable language)  
-- Starknet Forum — *Proofs in the Protocol* (STARK/recursion fundamentals)  
-- Ben-Sasson *et al.* (2018), *Scalable, transparent, and post-quantum secure computational integrity* (zk-STARK basis)  
-- StarkWare (2024), *The Cairo Programming Language Book* (Cairo specifics)  
-- Lerner *et al.* (2024), *BitVMX: A CPU for Bitcoin* (context on Bitcoin anchoring)  
-- Chia Network (2024), *Chia Whitepaper* (VDF and CAT concepts)  
+- Accumulate Network - modular blockchain anchoring and hierarchical receipts.
+- Ben-Sasson et al. - scalable transparent computational integrity and zk-STARK foundations.
+- BitVMX and related Bitcoin verification research - context for Bitcoin-side computation and anchoring.
+- Bitcoin Taproot and timelock primitives - BTC-side lock and refund design.
+- Relevant correspondent-chain documentation selected during implementation.
 
-These sources inform BCYX’s design: Merkle trees and Accumulate’s hierarchical anchoring; Cairo/STARK provability; and atomic swap primitives with timelocks/VDFs.
+These sources inform BCYX’s design: Bitcoin anchoring, commitment receipts, recursive proof composition, and atomic settlement with timeout recovery.

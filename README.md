@@ -18,6 +18,7 @@ from:
 The protocol is designed as a generalized coordination layer for:
 - cross-chain settlement,
 - confidential swaps,
+- BTC-interacting correspondent chains,
 - treasury routing,
 - oracle coordination,
 - and programmable interoperability systems.
@@ -153,6 +154,7 @@ Covers:
 
 The current pilot focuses on validating BCYX as:
 - a confidential swap coordination mechanism,
+- for BTC and compatible correspondent-chain settlement domains,
 - powered by aggregated proof verification,
 - and shielded settlement execution.
 

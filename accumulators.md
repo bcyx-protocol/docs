@@ -36,7 +36,7 @@ many events
 → one root
 → one batch proof
 → one verification step
-````
+```
 
 This is what makes confidential coordination practical.
 
@@ -100,7 +100,7 @@ Used for:
 * batched compliance checks,
 * and batched oracle attestations.
 
-This reduces the number of verification operations required on Starknet.
+This reduces the number of verification operations required on the selected correspondent chain.
 
 ---
 
@@ -154,7 +154,7 @@ D --> E[Batch Aggregation]
 
 E --> F[Accumulator Root Update]
 
-F --> G[Starknet Verification]
+F --> G[Correspondent-Chain Verification]
 
 G --> H[Settlement Finalization]
 ```
@@ -170,7 +170,7 @@ A user submits a commitment representing a private action.
 Example:
 
 * BTC lock intent,
-* strkBTC mint request,
+* correspondent-chain asset mint, release, or settlement request,
 * settlement condition,
 * or disclosure predicate.
 
@@ -247,7 +247,7 @@ This is useful for:
 
 In the BCYX-SWAP proof-of-concept:
 
-* the commitment accumulator tracks active BTC and strkBTC swap intents,
+* the commitment accumulator tracks active BTC and correspondent-chain asset swap intents,
 * the nullifier accumulator prevents double execution,
 * the proof accumulator compresses many swap validations,
 * and the settlement accumulator tracks execution state.
@@ -306,9 +306,9 @@ A BCYX accumulator implementation should include:
 * nullifier insertion,
 * inclusion proof generation,
 * batch proof serialization,
-* and Starknet verifier compatibility.
+* and correspondent-chain verifier compatibility.
 
-A minimal Cairo interface might expose:
+A minimal correspondent-chain interface might expose:
 
 ```text
 insert_commitment(commitment) -> new_root

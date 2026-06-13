@@ -165,13 +165,13 @@ F --> G{Predicate Satisfied?}
 
 G -- Yes --> H[Selective Disclosure Result]
 G -- No --> I[Reject]
-````
+```
 
 ---
 
 ## How it works in BCYX-SWAP
 
-For a BTC ↔ strkBTC PoC, selective disclosure is what allows the swap to be validated without exposing the full coordination graph.
+For a BTC ↔ correspondent-chain asset PoC, selective disclosure is what allows the swap to be validated without exposing the full coordination graph.
 
 ### Example flow
 
@@ -180,7 +180,7 @@ For a BTC ↔ strkBTC PoC, selective disclosure is what allows the swap to be va
 3. A receipt proves the commitment exists in the anchored state.
 4. A zk proof proves the swap satisfies the agreed rules.
 5. The verifier learns only that the swap is valid.
-6. The strkBTC side is released or minted.
+6. The correspondent-chain side is released, minted, burned, or reassigned.
 7. The hidden details remain private.
 
 This is consistent with the paper’s combined verification model: the verifier sees the receipt, the anchor, and the public threshold or predicate, but not the private witness.  
@@ -227,7 +227,7 @@ That makes selective disclosure a general-purpose coordination primitive, not ju
 
 ## Verifier contract behavior
 
-The Starknet verifier should only accept:
+The correspondent-chain verifier should only accept:
 
 * valid receipt
 * valid anchor root
@@ -243,7 +243,7 @@ It should reject:
 * inconsistent commitments
 * proofs that do not match the public state
 
-The paper’s Cairo implementation already models this structure with receipt verification plus private oracle predicates.  
+The paper’s proof-oriented implementation model already maps to this structure with receipt verification plus private oracle predicates.  
 
 ---
 
@@ -285,9 +285,9 @@ For the first BCYX proof-of-concept, selective disclosure should be implemented 
 * a receipt verification path
 * a predicate library
 * a nullifier registry
-* a Cairo verifier
+* a correspondent-chain verifier
 * a small set of policy predicates
-* a minimal swap flow between BTC and strkBTC
+* a minimal swap flow between BTC and a correspondent-chain asset
 
 Recommended initial predicates:
 

@@ -45,7 +45,7 @@ The public root summarizing a set of commitments stored in an accumulator or Mer
 ---
 
 ## Correspondent chain
-A chain that carries the actual final settlement state for a BCYX operation. BCYX coordinates the swap, while correspondent chains finalize the asset state.
+A chain or settlement domain that carries final state for a BCYX operation and can interact with Bitcoin network state directly or through a verifiable adapter. BCYX coordinates the swap, while correspondent chains finalize the asset state.
 
 ---
 
@@ -104,8 +104,8 @@ The on-chain contract layer that checks proofs, roots, nullifiers, and settlemen
 
 ---
 
-## strkBTC
-A Starknet-side Bitcoin representation used in the BCYX-SWAP proof-of-concept as the correspondent settlement asset or settlement mirror.
+## Correspondent-chain asset
+A BTC-interacting asset, representation, receipt, or settlement mirror used by a correspondent chain in BCYX-SWAP. It may represent BTC-backed value, a target swap asset, or a chain-native settlement claim.
 
 ---
 
@@ -140,7 +140,7 @@ The secret input to a zero-knowledge proof. This may include amounts, identities
 ---
 
 ## Public input
-The values visible to the verifier, such as roots, nullifiers, e to the verifier, such as roots, nullifiers, thresholds, thresholds, or anchor identifiers.
+The values visible to the verifier, such as roots, nullifiers, thresholds, or anchor identifiers.
 
 ---
 

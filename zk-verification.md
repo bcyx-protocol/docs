@@ -38,7 +38,7 @@ ZK proofs solve this by allowing BCYX to state:
 ```text
 "I know valid private data
 that satisfies the protocol rules"
-````
+```
 
 without revealing the private data itself.
 
@@ -104,7 +104,7 @@ C --> D[Zero-Knowledge Proof Generation]
 
 D --> E[Proof Object]
 
-E --> F[Starknet Cairo Verifier]
+E --> F[Correspondent-Chain Proof Verifier]
 
 F --> G{Valid?}
 
@@ -209,9 +209,9 @@ This is critical for:
 
 ---
 
-## Cairo Verifier Role
+## Correspondent-Chain Verifier Role
 
-BCYX uses a Starknet Cairo verifier contract as the public verification endpoint.
+BCYX uses a correspondent-chain proof verifier contract as the public verification endpoint.
 
 The verifier:
 
@@ -344,11 +344,11 @@ BCYX ZK verification is designed to preserve:
 
 ## PoC Use in BCYX-SWAP
 
-For the proof-of-concept swap mechanism between BTC and strkBTC, ZK verification is used to prove that:
+For the proof-of-concept swap mechanism between BTC and a correspondent-chain asset, ZK verification is used to prove that:
 
 1. BTC was locked under the expected conditions.
 2. The swap intent matches the intended counterparty or pool rule.
-3. The corresponding strkBTC output is valid.
+3. The corresponding correspondent-chain output is valid.
 4. The same commitment is not reused.
 5. The swap belongs to a valid batch and accumulator state.
 

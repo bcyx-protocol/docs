@@ -1,6 +1,6 @@
 # BCYX-SWAP
 
-> Proof-of-Concept confidential swap coordination mechanism for BTC ↔ strkBTC settlement.
+> Proof-of-Concept confidential swap coordination mechanism for BTC ↔ correspondent-chain asset settlement.
 
 ---
 
@@ -16,7 +16,7 @@ The objective is to demonstrate:
 
 between:
 - Bitcoin-family assets (BTC),
-- and Starknet-based representations (strkBTC).
+- and BTC-interacting correspondent-chain assets or representations.
 
 The system is not designed as a traditional bridge.
 
@@ -70,9 +70,9 @@ F --> G[Commitment Accumulator]
 
 G --> H[Batch Proof Aggregation]
 
-H --> I[Starknet Cairo Verifier]
+H --> I[Correspondent-Chain Proof Verifier]
 
-I --> J[Mint / Release strkBTC]
+I --> J[Mint / Release Correspondent-Chain Asset]
 
 J --> K[Settlement Finalization]
 ```
@@ -220,16 +220,16 @@ This dramatically reduces:
 
 ---
 
-# 7. Starknet Cairo Verifier
+# 7. Correspondent-Chain Proof Verifier
 
-A Starknet Cairo verifier contract validates:
+A correspondent-chain proof verifier contract validates:
 - recursive proof commitments,
 - accumulator roots,
 - settlement predicates,
 - and disclosure conditions.
 
 The verifier acts as:
-- the settlement confirmation layer for strkBTC issuance or release.
+- the settlement confirmation layer for the correspondent-chain asset issuance, release, burn, or reassignment.
 
 ---
 
@@ -244,7 +244,7 @@ The user:
 
 Example:
 - BTC amount,
-- target strkBTC amount,
+- target correspondent-chain asset amount,
 - settlement timeout,
 - disclosure rules.
 
@@ -292,15 +292,15 @@ Multiple swap executions compress into:
 
 ---
 
-## Phase 6 — Starknet Verification
+## Phase 6 — Correspondent-Chain Verification
 
-The Cairo verifier contract validates:
+The correspondent-chain verifier contract validates:
 - aggregated proofs,
 - settlement conditions,
 - and accumulator consistency.
 
 Once validated:
-- strkBTC is minted or released.
+- the correspondent-chain asset is minted, released, burned, or reassigned.
 
 ---
 
